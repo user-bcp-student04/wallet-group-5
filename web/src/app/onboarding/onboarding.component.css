@@ -35,17 +35,23 @@ p { line-height: 1.5; }
 }
 
 .progress ol {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .progress li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
   color: var(--ink-muted);
   font-size: 0.85rem;
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 
 .progress li[aria-current="step"] { color: var(--navy-700); font-weight: 700; }
@@ -59,7 +65,7 @@ p { line-height: 1.5; }
 }
 
 label { display: block; margin: 20px 0 8px; font-weight: 700; }
-input {
+input, select {
   width: 100%;
   padding: 12px;
   border: 1px solid var(--field-border);
@@ -72,7 +78,14 @@ input {
 .summary { padding: 16px; border-radius: var(--radius-sm); background: var(--surface-alt); }
 .summary dt { color: var(--ink-muted); font-size: 0.85rem; }
 .summary dd { margin: 6px 0 0; font-weight: 700; overflow-wrap: anywhere; }
-.status { color: var(--success); font-weight: 700; }
+.status { font-weight: 700; }
+.status.success { color: var(--success); }
+.status.warning { color: var(--warning); }
+.status.danger { color: var(--danger); }
+
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--orange-500); outline-offset: 2px; }
+button:disabled { opacity: 0.6; cursor: wait; }
+button + button, p + button { margin-top: 12px; }
 
 button {
   width: 100%;
@@ -86,12 +99,15 @@ button {
 
 button:hover { background: var(--navy-600); }
 button.secondary { background: var(--surface-alt); color: var(--navy-800); }
-.actions { display: flex; gap: 12px; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.actions button { flex: 1 1 160px; margin-top: 0; }
 a { color: var(--navy-700); }
 
 @media (max-width: 480px) {
   .onboarding-shell { padding: 12px; }
   .onboarding-card { padding: 24px 18px; }
-  .progress li { font-size: 0.75rem; }
+  .progress li { font-size: 0.7rem; }
+  .onboarding-card { overflow-wrap: anywhere; }
   .actions { flex-direction: column-reverse; }
+  .actions button { flex: 0 0 auto; }
 }

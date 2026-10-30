@@ -1,6 +1,6 @@
-from typing import Any
+from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
 
 class CreateTaskRequest(BaseModel):
@@ -59,3 +59,70 @@ class BackendHealthResponse(BaseModel):
     requestedBy: str
     status: int
     body: str
+
+
+TestDocument = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, max_length=200, pattern=r"^TEST-.+$"),
+]
+
+
+class DocumentRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    documentType: Literal["TEST"]
+    document: TestDocument
+    scenario: Literal["APPROVED", "MANUAL_REVIEW", "REJECTED", "UNAVAILABLE"] = "APPROVED"
+
+
+class TwoFactorRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    code: Annotated[str, StringConstraints(strip_whitespace=True, pattern=r"^\d{6}$")]
+
+
+class ExitRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    action: Literal["CONTINUE", "END"]
+
+
+class WalletResponse(BaseModel):
+    id: str
+    status: str
+    balance: int
+    reserved: int
+    available: int
+    currency: str
+
+
+class OnboardingStates(BaseModel):
+    registration: Literal["STARTED", "DOCUMENT_VALID", "PERSISTING", "PERSISTED"]
+    verification: Literal["PENDING", "CHALLENGED", "VERIFIED"]
+    activation: Literal["INACTIVE", "PENDING", "REJECTED", "ACTIVE"]
+    provider: Literal["ACTIVE", "PENDING", "REJECTED"] | None = None
+
+
+class OnboardingResponse(BaseModel):
+    onboardingId: str
+    step: Literal["DOCUMENT", "TWO_FACTOR", "ACTIVATION", "EXIT"]
+    states: OnboardingStates
+    twoFactorAvailable: bool
+    wallet: WalletResponse | None = None
+    paymentsEntryAvailable: bool = False
+
+
+class AnalyticsMonth(BaseModel):
+    month: str
+    started: int
+    newActiveUsers: int
+    medianSeconds: float | None
+    withinTarget: bool | None
+
+
+class AnalyticsResponse(BaseModel):
+    boundary: dict[str, str]
+    targetMedianSeconds: int
+    months: list[AnalyticsMonth]
+    acquisitionSpend: dict[str, str]
+    cac: float | None = None

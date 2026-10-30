@@ -13,6 +13,12 @@ services:
       AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-}
       WORKSHOP_DB_PATH: /data/workshop.db
       WORKSHOP_UPLOAD_DIR: /uploads
+      WALLET_MOCK_URL: ${WALLET_MOCK_URL:-http://host.docker.internal:8787}
+      ONBOARDING_OTP_TEST_CODE: ${ONBOARDING_OTP_TEST_CODE:-}
+      ONBOARDING_DATA_KEY: ${ONBOARDING_DATA_KEY:-}
+      ONBOARDING_SUPPORT_MESSAGE: ${ONBOARDING_SUPPORT_MESSAGE:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - api-data:/data
       - api-uploads:/uploads
