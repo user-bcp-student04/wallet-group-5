@@ -1,0 +1,69 @@
+<main class="onboarding-shell">
+  <section class="onboarding-card" aria-labelledby="onboarding-title">
+    <header>
+      <p class="eyebrow">Wallet Group 5 · demostración</p>
+      <h1 id="onboarding-title">Conoce el registro de tu wallet</h1>
+      <p>Este recorrido es una simulación. No ingreses datos personales reales.</p>
+    </header>
+
+    <nav class="progress" aria-label="Pasos del onboarding">
+      <ol>
+        <li [attr.aria-current]="flow.step === 'name' ? 'step' : null">
+          <span>1</span> Nombre
+        </li>
+        <li [attr.aria-current]="flow.step === 'review' ? 'step' : null">
+          <span>2</span> Revisión
+        </li>
+        <li [attr.aria-current]="flow.step === 'active' ? 'step' : null">
+          <span>3</span> Activación
+        </li>
+      </ol>
+    </nav>
+
+    @if (flow.step === 'name') {
+      <form (ngSubmit)="flow.continue()" novalidate>
+        <h2>Paso 1: Elige un nombre</h2>
+        <p>Usa un nombre ficticio para identificar esta demostración.</p>
+        <label for="display-name">Nombre de demostración</label>
+        <input id="display-name" name="displayName" type="text"
+          [(ngModel)]="flow.name" (ngModelChange)="flow.error = ''"
+          maxlength="40" autocomplete="off" placeholder="Ejemplo: Alex"
+          [attr.aria-invalid]="flow.error ? 'true' : null"
+          [attr.aria-describedby]="flow.error ? 'name-help name-error' : 'name-help'">
+        <p id="name-help" class="help">Escribe entre 2 y 40 caracteres.</p>
+        @if (flow.error) {
+          <p id="name-error" class="error" role="alert">{{ flow.error }}</p>
+        }
+        <button type="submit">Continuar a revisión</button>
+      </form>
+    }
+
+    @if (flow.step === 'review') {
+      <div>
+        <h2>Paso 2: Revisa tu información</h2>
+        <p>Este nombre se usa solo durante el recorrido de demostración.</p>
+        <dl class="summary">
+          <dt>Nombre de demostración</dt>
+          <dd>{{ flow.name }}</dd>
+        </dl>
+        <div class="actions">
+          <button type="button" class="secondary" (click)="flow.edit()">Editar nombre</button>
+          <button type="button" (click)="flow.activate()">Activar demostración</button>
+        </div>
+      </div>
+    }
+
+    @if (flow.step === 'active') {
+      <div>
+        <p class="status" role="status">Activa · solo demostración</p>
+        <h2>Paso 3: Recorrido completado</h2>
+        <p>{{ flow.name }}, completaste el recorrido simulado.</p>
+        <p>No se creó una wallet real. El home y los pagos no están disponibles en esta demostración.</p>
+        <button type="button" (click)="flow.reset()">Reiniciar demostración</button>
+      </div>
+    }
+
+    <p class="notice">El avance se pierde al recargar o salir. No se envían ni guardan datos.</p>
+    <a routerLink="/login">Volver al login heredado</a>
+  </section>
+</main>

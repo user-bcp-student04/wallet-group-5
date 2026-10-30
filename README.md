@@ -54,6 +54,16 @@ docker compose down
 Este comando conserva los volúmenes. No uses la opción de eliminación de
 volúmenes si necesitas conservar sus datos.
 
+### Demostración del onboarding
+
+En `http://localhost:4200/onboarding` está el recorrido de demostración: nombre
+ficticio, revisión y activación simulada. También se puede abrir desde el login.
+El estado existe solo en memoria y se pierde al recargar o salir. No ingreses
+datos reales: no se crea una cuenta ni una wallet operativa, y no hay pagos,
+home, KYC ni analítica en esta entrega. Los criterios de medición de la historia
+quedan pendientes. El alcance está documentado en el cambio OpenSpec
+`onboarding-wallet-demo`; el borrador anterior se conserva separado.
+
 ## Desarrollo y pruebas
 
 Sin contenedores, instala JDK 21 y Maven 3.9+, Python 3.13 y Node.js 22.12+.
@@ -95,6 +105,14 @@ También puedes pedir a Copilot `/opsx-propose` con la descripción del cambio.
 No reutilices la propuesta anterior de JWT como si fuera el alcance del nuevo
 proyecto. Revisa y aprueba el alcance antes de implementar o retirar los
 contratos heredados.
+
+El repositorio hermano `crewai` ofrece `product_workflow.py` para revisar un
+cambio OpenSpec de este producto con sus agentes. Consulta el README de ese
+repositorio para seleccionar la ruta del producto, el cambio y los archivos de
+contexto. El flujo guarda propuestas en `crewai/output/` y no modifica este
+repositorio: revisa y aplica manualmente los cambios, y ejecuta aquí las pruebas.
+Una propuesta generada no aprueba decisiones pendientes ni demuestra que las
+pruebas hayan sido ejecutadas.
 
 ## Nuevas historias y evidencias
 
