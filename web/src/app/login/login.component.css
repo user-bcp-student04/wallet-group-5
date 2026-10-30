@@ -137,6 +137,13 @@ button:disabled { opacity: 0.6; cursor: wait; }
   line-height: 1.45;
 }
 
+.demo-link {
+  display: block;
+  margin-top: 20px;
+  color: var(--navy-700);
+  text-align: center;
+}
+
 small {
   display: block;
   margin-top: 26px;

@@ -1,98 +1,191 @@
-# AI Labs
+# Wallet Group 5
 
-Un producto de práctica con autenticación Java/Quarkus en auth/, API Python/FastAPI en api/ e interfaz Angular en web/. Hay un solo repositorio Git. La documentación y las evidencias del laboratorio están en la raíz.
+Repositorio de partida para un nuevo proyecto. Conserva la configuración y los
+tres componentes heredados del taller anterior:
 
-El código incluye defectos deliberados. Trabaja con datos ficticios, en localhost. Las tres plantillas originales se conservan sin cambios. Crea tu propio repositorio con Use this template en GitHub y luego clónalo dentro de tu carpeta del curso, con el nombre local ai-labs.
+- `auth/`: autenticación Java 21 con Quarkus y Maven.
+- `api/`: API Python 3.13 con FastAPI.
+- `web/`: interfaz Angular con Node.js 22.
 
-## Crear tu copia desde el template
+**Estado:** el alcance de Wallet Group 5 aún está por definir. Los componentes
+no están vacíos: mantienen el código, las pruebas y los contratos anteriores
+temporalmente. No son un producto listo para producción. La integración entre
+el emisor de `auth` y la verificación JWT de `api` está pendiente de comprobar;
+arrancar los servicios no garantiza que el inicio de sesión funcione de extremo
+a extremo. Consulta `HALLAZGOS.md` antes de reutilizar el código: contiene
+riesgos pendientes del proyecto anterior.
 
-1. Abre https://github.com/NTTData-Academy/ai-labs y elige Use this template → Create a new repository.
-2. Elige tu cuenta como propietaria y usa ai-labs como nombre. Copia solo la rama principal.
-3. Copia la URL de tu nuevo repositorio desde Code. Desde tu carpeta de matrícula y nombre, ejecuta git clone con esa URL y ai-labs como carpeta de destino.
-4. Entra en ai-labs y abre VS Code. Si esa carpeta ya existe, conserva su contenido y consulta al instructor antes de clonar.
+## Configuración conservada
 
-La clonación ya incluye .git y origin apuntando a tu repositorio. No ejecutes git init ni clones los componentes por separado. Los commits guardan versiones locales; push envía esas versiones a GitHub.
+Se mantienen Docker Compose, CI, CodeQL, Dependency Review, Dependabot, las
+pruebas, los agentes de Copilot y OpenSpec. Las instrucciones de trabajo están
+en `AGENTS.md`. Los documentos `HALLAZGOS.md`, `PLAN.md` y los documentos de
+`docs/` describen el sistema anterior; son referencias históricas, no requisitos
+aprobados para Wallet Group 5. Se conservan mientras exista el código al que
+hacen referencia.
 
-## Abrir el proyecto
+La base de datos local `api/data/workshop.db` y los volúmenes de Docker no se
+han borrado. No incluyas bases de datos, secretos, tokens ni archivos `.env` en
+Git. La configuración actual de Compose conserva el nombre `ai-labs` para no
+cambiar accidentalmente los volúmenes existentes.
 
-Abre esta carpeta con Archivo → Abrir carpeta en VS Code, o ejecuta desde ella:
+## Levantar la solución (onboarding de la wallet)
 
-```bash
-code .
-git status
-git switch -c day1/prompting
-```
+Es el camino más corto para ver el onboarding funcionando. No necesita `auth` ni Docker.
 
-Si la rama ya existe, entra con git switch day1/prompting. Todos los comandos de Git se ejecutan aquí. No inicialices Git dentro de auth/, api/ o web/.
+**Requisitos:** Python 3.11–3.13 (recomendado 3.13) y Node.js 22.12+ con npm. Tener acceso a Internet para
+llegar al simulador de wallet del grupo 5.
 
-## Elegir recorrido
+1. **Configura el entorno.** Desde la raíz, copia el archivo de ejemplo (PowerShell:
+   `Copy-Item .env.example .env`; Bash: `cp .env.example .env`). Trae `WALLET_MOCK_URL` con la URL del
+   simulador del grupo 5 y `ONBOARDING_OTP_TEST_CODE=123456`, el código del doble factor simulado.
+   Sin ese código no se puede activar ninguna wallet.
+2. **Instala las dependencias (una sola vez).**
 
-- Backend: elige auth o api. Revisa reglas, entradas, persistencia, errores y pruebas de ese servicio.
-- Frontend: elige web. Revisa login, sesión, dashboard, accesibilidad y errores del servicio.
-- Testing: elige uno o más componentes. Diseña casos desde los contratos, reproduce hallazgos y automatiza pruebas; coordina las correcciones de producto con su responsable.
+   ```bash
+   python tools/lab.py setup api
+   python tools/lab.py setup web
+   ```
 
-Puedes recorrer los tres componentes. Conserva las evidencias anteriores y añade registros con componente e ID. Las pruebas viven dentro del componente cuyo comportamiento comprueban. En el Día 1 no crees una carpeta general `testing/`.
+   `setup api` exige Python 3.11–3.13 y crea `api/.venv`.
+3. **Inicia la API** en una terminal (puerto 8000) y **la web** en otra (puerto 4200). Ambas leen `.env`:
 
-## Arranque completo
+   ```bash
+   python tools/lab.py start api
+   python tools/lab.py start web
+   ```
 
-Necesitas Docker con Compose y el motor iniciado. Podman Compose es otra opción si ya está preparado en tu equipo.
+4. **Comprueba que están arriba.** `http://localhost:8000/docs` debe abrir la documentación de la API.
+   Abre `http://localhost:4200/onboarding`.
+5. **Recorre el flujo.** Pulsa «Crear o activar mi wallet», ingresa un documento ficticio nuevo, por
+   ejemplo `TEST-DEMO-001` (cada documento solo sirve una vez), el código `123456`, confirma el registro y
+   verifica que aparece «Wallet activa». «Resultado simulado» permite probar revisión manual,
+   rechazo e indisponibilidad del proveedor. Para resolver una revisión manual, aprueba la verificación en el
+   simulador con `POST /kyc/verifications/{id}/decision` y `{"decision": "ACTIVE"}` y pulsa «Actualizar estado».
+
+**Con Docker (sin instalar nada más):** `docker compose up --build` levanta `auth`, `api` y `web`; la web
+queda en `http://localhost:4200/onboarding`. Compose lee `.env` desde la raíz.
+
+**Problemas frecuentes**
+
+- *El doble factor aparece como no disponible:* falta `ONBOARDING_OTP_TEST_CODE` (6 dígitos) en `.env`, o
+  reiniciaste la API sin cargarlo.
+- *Error de conexión con el servicio de onboarding:* la API no está iniciada en el puerto 8000.
+- *Error al contactar al proveedor (`503`, `504`, `502`):* revisa que `WALLET_MOCK_URL` sea correcta y alcanzable.
+  Una variable ya definida en tu entorno prevalece sobre `.env`.
+- *Un documento ya usado devuelve un mensaje neutro:* es intencional; usa otro `TEST-…` o borra la cuenta de prueba
+  de la base `api/data/workshop.db`.
+- Para empezar con una base limpia, detén la API y borra `api/data/workshop.db` (también se pierden las tareas del
+  sistema heredado, que se vuelven a crear).
+
+Pruebas automáticas: `python tools/lab.py test api` y `python tools/lab.py test web`.
+
+## Arranque de los servicios heredados
+
+Con Docker y el motor iniciado, desde la raíz:
 
 ```bash
 docker compose up --build
 ```
 
-Abre http://localhost:4200. Usuario ficticio student, contraseña Workshop123!. Autenticación publica http://localhost:8080/q/health y la API http://localhost:8000/docs. La primera ejecución descarga imágenes y dependencias. Espera a que los tres servicios respondan: el orden de arranque no certifica que estén listos.
+La API requiere las variables de entorno `AUTH_JWT_PUBLIC_KEY`,
+`AUTH_JWT_ISSUER` y `AUTH_JWT_AUDIENCE` para validar tokens. Sin esa
+configuración, las solicitudes protegidas responden `503`. No guardes claves
+privadas ni tokens en el repositorio. La configuración de estas variables no
+resuelve por sí sola la integración pendiente con el emisor de `auth`.
 
-En otra terminal puedes ver el estado y la salida:
+La interfaz está en `http://localhost:4200`, la documentación de la API en
+`http://localhost:8000/docs` y la comprobación de salud de autenticación en
+`http://localhost:8080/q/health`. Para detener los servicios, usa Ctrl+C y:
 
 ```bash
-docker compose ps
-docker compose logs
+docker compose down
 ```
 
-Al terminar, Ctrl+C y después docker compose down. Esto conserva los volúmenes de la API. No ejecutes down con eliminación de volúmenes si quieres conservar sus datos. El arranque con Compose construye las aplicaciones; no equivale a ejecutar sus pruebas.
+Este comando conserva los volúmenes. No uses la opción de eliminación de
+volúmenes si necesitas conservar sus datos.
 
-## Ejecutar un componente
+### Onboarding de la wallet (simulador)
 
-Para desarrollar sin contenedores necesitas JDK 21 y Maven 3.9+ para auth; Python 3.13 para api; Node.js 22.12+ y npm para web. Usa una terminal por servicio y ejecuta los comandos desde la raíz:
+El recorrido de registro y activación sigue el procedimiento
+[docs/stories/onboarding-wallet-procedimiento.md](docs/stories/onboarding-wallet-procedimiento.md)
+y usa el simulador de wallet descrito en
+[docs/contracts/bcp-wallet-mock-openapi.yaml](docs/contracts/bcp-wallet-mock-openapi.yaml)
+(KYC de prueba, sin documentos ni dinero reales). La web habla con la API
+(`/api/onboarding`) y la API llama al simulador. Pasos: inicio, documento, doble factor,
+persistencia y control de duplicados, activación y salida. Para probarlo:
+
+1. Copia `.env.example` a `.env` (no se versiona). Ahí vive `WALLET_MOCK_URL`, con la URL del
+   simulador del grupo 5 (`https://bcp-wallet-mock.yefri.workers.dev/groups/5`). Docker Compose
+   lee ese archivo y `python tools/lab.py start api` también; si defines la variable en el
+   entorno, prevalece sobre `.env`. Sin ella la API usa `http://127.0.0.1:8787`
+   (`compose.yaml`, `http://host.docker.internal:8787`). Ese estado es **compartido por todo el
+   grupo**: no uses `POST /control/reset` sin avisar al equipo.
+2. Define `ONBOARDING_OTP_TEST_CODE` (6 dígitos) en `.env`. Es el código del **doble factor
+   simulado**, un mecanismo de prueba **no aprobado para el MVP**: sin él, el doble factor queda
+   no disponible y no se puede activar ninguna wallet. El código nunca se devuelve ni se registra.
+3. Inicia la API (`python tools/lab.py start api`, puerto 8000) y, desde `web/`,
+   `npm start`. Abre `http://localhost:4200/onboarding` (también hay un enlace en el login).
+
+Variables opcionales: `ONBOARDING_DATA_KEY` (clave Fernet para cifrar el documento; si falta se
+crea `api/data/onboarding.key`, fuera de Git) y `ONBOARDING_SUPPORT_MESSAGE` (texto mostrado
+cuando el registro no puede continuar).
+
+Endpoints, todos **públicos** salvo el resumen analítico, porque quien se registra aún no
+tiene sesión. El identificador aleatorio del onboarding (`onboardingId`) es la única
+referencia; el documento y el código nunca van en la URL.
+
+- `POST /api/onboarding` inicia el flujo (evento `onboarding.started`) y devuelve el estado.
+- `GET /api/onboarding/{id}` devuelve el estado (`step`, `states.registration|verification|activation|provider`,
+  `wallet`, `paymentsEntryAvailable`) y actualiza una revisión pendiente desde el proveedor.
+- `PUT /api/onboarding/{id}/document` con `{"documentType": "TEST", "document": "TEST-001", "scenario": "APPROVED"}`
+  valida en el servidor, guarda el documento cifrado y emite el desafío (`422` si es inválido; la
+  respuesta no repite el valor recibido).
+- `POST /api/onboarding/{id}/challenge` reenvía el código (máximo 3 por onboarding).
+- `POST /api/onboarding/{id}/two-factor` con `{"code": "123456"}`; `400 TWO_FACTOR_FAILED`
+  (`INCORRECT` o `EXPIRED`), `429 TWO_FACTOR_LOCKED` tras 5 fallos en 5 minutos (por onboarding o por
+  documento) y `503` si el mecanismo no está disponible.
+- `POST /api/onboarding/{id}/activate` exige el doble factor verificado (`403 TWO_FACTOR_REQUIRED`),
+  persiste la cuenta y activa la wallet. Una cuenta posiblemente duplicada recibe
+  `409 REGISTRATION_UNAVAILABLE` con un mensaje neutro, sin confirmar que exista ni su estado.
+  Proveedor: `503`, `504` (resultado incierto), `429` o `502`.
+- `POST /api/onboarding/{id}/exit` con `{"action": "CONTINUE" | "END"}` registra la salida; solo con la wallet activa.
+- `GET /api/onboarding/analytics/summary` (requiere JWT) devuelve por mes los onboardings iniciados, los
+  nuevos usuarios activos y la mediana de duración frente a 180 s. Frontera: de `onboarding.started`
+  a `onboarding.closed` con la wallet activa. `cac` es `null` mientras no haya fuente de gasto de adquisición.
+  La finalización del onboarding no es el evento de activación de pagos usado para MAU.
+
+Usa documentos ficticios que empiecen con `TEST-`. El selector «Resultado simulado»
+solo sirve para pruebas: provoca la aprobación, la revisión manual, el rechazo o la
+indisponibilidad del proveedor. Una revisión manual la resuelve un operador con
+`POST /kyc/verifications/{id}/decision` en el simulador; la interfaz permite actualizar su estado.
+
+Las cuentas se guardan en `api/data/workshop.db` (tablas `onboarding_sessions`, `onboarding_accounts`
+y `onboarding_events`): **un documento de prueba solo puede usarse una vez**. El documento se guarda
+cifrado y la unicidad se aplica sobre un derivado con clave. La tabla `accounts` de versiones
+anteriores ya no se usa y puede conservar documentos de prueba en texto claro; bórrala si existe.
+`POST /control/reset` del simulador borra sus datos pero no esas cuentas.
+
+**Límites y riesgos:** los endpoints de onboarding no tienen autenticación de la persona y
+sus límites de intentos son por onboarding y por documento, no por origen; la respuesta
+neutra ante una cuenta existente deja una señal residual. Solo son aceptables con documentos
+ficticios. El doble factor es una simulación (código de prueba por entorno) y **no está
+aprobado para el MVP**. Una revisión pendiente solo se retoma en la misma sesión del navegador.
+Siguen fuera de alcance la ejecución de pagos, el evento de activación para MAU y el cálculo de
+CAC (no hay fuente de gasto de adquisición). El alcance está en el cambio OpenSpec
+`onboarding-wallet-demo`; el borrador `onboarding-wallet` se conserva separado.
+
+## Desarrollo y pruebas
+
+Sin contenedores, instala JDK 21 y Maven 3.9+, Python 3.13 y Node.js 22.12+.
+Desde la raíz, prepara y ejecuta cada componente por separado:
 
 ```bash
 python tools/lab.py setup auth
 python tools/lab.py start auth
 ```
 
-```bash
-python tools/lab.py setup api
-python tools/lab.py start api
-```
-
-```bash
-python tools/lab.py setup web
-python tools/lab.py start web
-```
-
-En macOS/Linux, python3 puede ser el nombre del intérprete. Usa Python 3.13 para setup api. El script crea api/.venv si falta y no lo comparte con otros proyectos. Si ejecutas un solo componente, registra las integraciones que no pudiste probar. No arranques Compose y los procesos locales sobre los mismos puertos.
-
-## Lab 01, paso a paso
-
-Al comenzar se incluyen `README.md`, `AGENTS.md`, `RETO.md` y `docs/GOOD_PRACTICES.md` como referencias. El reto contiene candidatos por comprobar, no hallazgos confirmados. Los entregables `HALLAZGOS.md`, `PLAN.md`, `prompts/`, `docs/ENDPOINTS.md` y `docs/TESTING.md` se crean durante los pasos siguientes; no vienen preparados.
-
-`AGENTS.md` reúne las instrucciones comunes y las secciones de auth, api y web. VS Code con Copilot Agent carga el archivo raíz por defecto; no necesitas pedir que lo lea en cada prompt. Revisa sus reglas y acuerda los ajustes antes de editar código.
-
-Las guías y los prompts del portal permanecen fuera del producto. Su secuencia es:
-
-1. Comprueba las herramientas del componente elegido y abre ai-labs en VS Code desde su raíz.
-2. Revisa las instrucciones de AGENTS.md, RETO.md y docs/GOOD_PRACTICES.md. Acuerda quién implementa y quién revisa.
-3. Crea `prompts/` y guarda ahí el pedido adaptado, su alcance, criterios y justificación. Usa nombres como `auth-discovery.md` o `web-testing.md`.
-4. Discovery: sigue el flujo del componente sin modificar código. Crea `HALLAZGOS.md` con evidencia desde la raíz, IDs `H-AUTH-01`, `H-API-01` o `H-WEB-01`, y estados `Pendiente` o `No encontrado`. Si el archivo ya existe, conserva las filas de los demás componentes. No presupongas que toda la lista de `RETO.md` está confirmada.
-5. Selecciona hallazgos y crea o actualiza `PLAN.md`. Registra rutas, contratos, pruebas previas y posteriores. Una persona revisa y registra su decisión antes de implementar.
-6. Ejecuta caracterización, implementa solo el alcance aprobado y ejecuta regresión. Actualiza cada hallazgo con evidencia real. Si el contrato entre auth y api cambia, revisa ambos consumidores y coordina el cambio.
-7. Otra persona revisa el diff y confirma o reabre hallazgos. Una revisión de IA no reemplaza esa decisión.
-8. Crea o actualiza `docs/ENDPOINTS.md` por componente, sin inventar endpoints o comportamientos.
-9. Crea o actualiza `docs/TESTING.md` con casos válidos, borde y error, comandos, resultados y cobertura. Si añades código o pruebas tras la revisión, vuelve a revisar el diff.
-10. Revisa los archivos que vas a incluir, haz commit y solicita la revisión humana de cierre. Solo entonces crea checkpoint/day1. Las pruebas fallidas y las operaciones no ejecutadas permanecen visibles.
-
-Para pruebas ejecuta uno de estos comandos:
+Sustituye `auth` por `api` o `web` para los otros componentes. Para validar:
 
 ```bash
 python tools/lab.py test auth
@@ -100,32 +193,45 @@ python tools/lab.py test api
 python tools/lab.py test web
 ```
 
-python tools/lab.py test ejecuta los tres y devuelve error si falla cualquiera. Requiere haber preparado cada componente. auth genera auth/target/site/jacoco/index.html; api genera api/htmlcov/index.html; web genera web/coverage/. Registra las rutas reales de tu ejecución.
+`python tools/lab.py test` ejecuta las pruebas de los tres componentes. La API
+mantiene un umbral de cobertura global del 85%; la cobertura del código
+modificado debe verificarse por separado. Estas pruebas pertenecen a los
+contratos heredados, no al alcance aún no definido del nuevo proyecto.
 
-La meta del laboratorio es 85% del código modificado. El comando de api conserva además el gate de 85% de toda app, una métrica diferente. Ningún comando anterior demuestra por sí solo la cobertura del diff. Registra numerador, denominador y método; no cambies umbrales para aprobar. Antes de cerrar deben estar revisados los riesgos pendientes, no solo el porcentaje.
+## Crear el alcance nuevo con OpenSpec
 
-## Cierre local por ramas
-
-Después de completar la revisión humana, agrega únicamente los archivos del cambio y sus evidencias, comprueba el diff preparado y haz commit. No agregues bases, secretos, dependencias ni tokens.
+OpenSpec ya está configurado; no hace falta reinicializarlo. Define primero la
+necesidad, el alcance, las exclusiones y los criterios de aceptación de Wallet
+Group 5. Después, desde la raíz:
 
 ```bash
-git status
-git diff
-git diff --cached
-git commit -m "Lab 01: cambio y evidencias revisados"
-git switch main
-git merge --no-ff day1/prompting -m "Integra Lab 01 revisado"
-git branch checkpoint/day1 main
+openspec new change nombre-del-cambio
+openspec status --change nombre-del-cambio
+openspec instructions proposal --change nombre-del-cambio
 ```
 
-git commit requiere que hayas preparado antes los archivos con git add indicando sus rutas. Ejecuta cada comando solo si el anterior terminó correctamente. Si el merge tiene conflictos, conserva el trabajo, resuélvelos con revisión y repite las pruebas afectadas antes de crear el checkpoint. Comprueba que git status --short no muestre cambios pendientes. Si checkpoint/day1 ya existe, comprueba su commit con git log checkpoint/day1; no la fuerces ni la muevas para ocultar un cierre anterior. La rama guarda un punto de continuidad local y no certifica calidad, ejecución remota ni aprobación. No crees esa rama sobre la plantilla vacía. No se usan tags.
+Completa los artefactos indicados por `openspec status`, incluyendo propuesta,
+diseño, especificaciones y tareas; vuelve a consultar el estado conforme avances.
+También puedes pedir a Copilot `/opsx-propose` con la descripción del cambio.
+No reutilices la propuesta anterior de JWT como si fuera el alcance del nuevo
+proyecto. Revisa y aprueba el alcance antes de implementar o retirar los
+contratos heredados.
 
-Tu copia tiene origin desde la clonación. El Día 1 se completa con ramas y commits locales; no requiere push ni PR. Cuando el recorrido pida publicar, comprueba el remoto y los resultados de CI por separado; no los inventes. Los días siguientes reutilizan este producto, sus evidencias raíz y sus ramas; las guías históricas que esperan tres repositorios necesitan adaptación.
+El repositorio hermano `crewai` ofrece `product_workflow.py` para revisar un
+cambio OpenSpec de este producto con sus agentes. Consulta el README de ese
+repositorio para seleccionar la ruta del producto, el cambio y los archivos de
+contexto. El flujo guarda propuestas en `crewai/output/` y no modifica este
+repositorio: revisa y aplica manualmente los cambios, y ejecuta aquí las pruebas.
+Una propuesta generada no aprueba decisiones pendientes ni demuestra que las
+pruebas hayan sido ejecutadas.
 
-## Procedencia de las plantillas
+## Nuevas historias y evidencias
 
-- `auth/`: `workshop-auth-backend-template` en `17db05a4a2675a91cd3bc466046d17b9860b8805`.
-- `api/`: `workshop-requirements-api-template` en `c1d308ad8f7f0ee3150cbaa214a8e2d4260d072f`.
-- `web/`: `workshop-login-frontend-template` en `67b57a9db442708c9e9d1d7d7880d879719c1850`.
-
-Se importaron archivos de Git, sin archivos locales ni secretos. Los repositorios originales conservan su historial.
+Para cada funcionalidad aprobada, registra su objetivo, alcance, exclusiones,
+criterios de aceptación verificables y pruebas previstas. Las historias y
+tareas pueden generarse a partir de la propuesta y las especificaciones de
+OpenSpec. Para nuevos hallazgos, conserva las secciones existentes de
+`HALLAZGOS.md` y añade el componente, un identificador nuevo, evidencia y
+estado; no presentes los hallazgos anteriores como si fueran requisitos del
+nuevo proyecto. Documenta los contratos y resultados de pruebas conforme se
+implementen y verifiquen.

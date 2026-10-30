@@ -10,6 +10,17 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def load_env_file():
+    """Carga `.env` de la raíz sin pisar las variables ya definidas en el entorno."""
+    path = ROOT / '.env'
+    if not path.is_file():
+        return
+    for line in path.read_text(encoding='utf-8').splitlines():
+        name, separator, value = line.strip().partition('=')
+        if separator and not name.startswith('#') and value.strip():
+            os.environ.setdefault(name.strip(), value.strip())
+
+
 def run(command, component):
     print(f'[{component}] {" ".join(map(str, command))}', flush=True)
     return subprocess.run(list(map(str, command)), cwd=ROOT / component).returncode
@@ -66,6 +77,7 @@ if __name__ == '__main__':
     parser.add_argument('action', choices=['setup', 'start', 'test'])
     parser.add_argument('component', choices=['auth', 'api', 'web'], nargs='?')
     args = parser.parse_args()
+    load_env_file()
     if args.action == 'start' and not args.component:
         parser.error('Para los tres servicios usa docker compose up --build. Para uno, indica auth, api o web.')
     results = [execute(args.action, part) for part in ([args.component] if args.component else ['auth', 'api', 'web'])]

@@ -1,0 +1,221 @@
+<main class="onboarding-shell">
+  <section class="onboarding-card" aria-labelledby="onboarding-title" [attr.aria-busy]="flow.busy">
+    <header>
+      <p class="eyebrow">Wallet Group 5 · simulador</p>
+      <h1 id="onboarding-title">Activa tu wallet</h1>
+      <p>Verificación con un proveedor simulado. Usa solo documentos ficticios; no ingreses datos personales reales.</p>
+    </header>
+
+    <nav class="progress" aria-label="Pasos del onboarding">
+      <ol>
+        @for (item of steps; track item.step; let position = $index) {
+          <li [attr.aria-current]="flow.step === item.step ? 'step' : null">
+            <span>{{ position + 1 }}</span> {{ item.label }}
+          </li>
+        }
+      </ol>
+    </nav>
+
+    @if (flow.step === 'start') {
+      @if (flow.recoverableId) {
+        <div>
+          <h2>Tienes un registro en curso</h2>
+          <p>No pudimos consultar su estado. Hasta resolverlo no puedes iniciar otro registro.</p>
+          @if (flow.error) {
+            <p class="error" role="alert">{{ flow.error }}</p>
+          }
+          <button type="button" (click)="retryRecovery()" [disabled]="flow.busy">
+            {{ flow.busy ? 'Consultando...' : 'Reintentar consulta' }}
+          </button>
+        </div>
+      } @else {
+        <div>
+          <h2>Crea o activa tu wallet</h2>
+          <p>Para continuar necesitarás:</p>
+          <ul>
+            <li>El tipo y el número de tu documento (en esta demostración, un documento ficticio de tipo TEST).</li>
+            <li>Un código de verificación de {{ codeLength }} dígitos como segundo factor.</li>
+          </ul>
+          @if (flow.notice) {
+            <p class="status success" role="status">{{ flow.notice }}</p>
+          }
+          @if (flow.error) {
+            <p class="error" role="alert">{{ flow.error }}</p>
+          }
+          <button type="button" (click)="start()" [disabled]="flow.busy">
+            {{ flow.busy ? 'Iniciando...' : 'Crear o activar mi wallet' }}
+          </button>
+        </div>
+      }
+    }
+
+    @if (flow.step === 'document') {
+      <form (ngSubmit)="submitDocument()" novalidate>
+        <h2>Paso 2: Ingresa tu documento de prueba</h2>
+        @if (flow.twoFactorBlocked) {
+          <p class="status warning" role="status">{{ twoFactorNotConfiguredMessage }}</p>
+        }
+        <label for="document-type">Tipo de documento</label>
+        <input id="document-type" name="documentType" type="text" [value]="flow.documentType" readonly
+          aria-describedby="document-type-help">
+        <p id="document-type-help" class="help">En esta demostración solo se admite el tipo TEST.</p>
+
+        <label for="document">Número de documento</label>
+        <input id="document" name="document" type="text"
+          [(ngModel)]="flow.document" (ngModelChange)="flow.error = ''"
+          maxlength="200" autocomplete="off" placeholder="TEST-001"
+          [attr.aria-invalid]="flow.error ? 'true' : null"
+          [attr.aria-describedby]="flow.error ? 'document-help document-error' : 'document-help'">
+        <p id="document-help" class="help">Debe empezar con TEST- seguido de un código.</p>
+        @if (flow.error) {
+          <p id="document-error" class="error" role="alert">{{ flow.error }}</p>
+        }
+
+        <label for="scenario">Resultado simulado del proveedor</label>
+        <select id="scenario" name="scenario" [(ngModel)]="flow.scenario" aria-describedby="scenario-help">
+          @for (option of scenarios; track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+          }
+        </select>
+        <p id="scenario-help" class="help">Solo para pruebas: elige qué respuesta devolverá el simulador.</p>
+
+        <div class="actions">
+          @if (flow.isEditingDocument) {
+            <button type="button" class="secondary" (click)="flow.cancelEditDocument()" [disabled]="flow.busy">
+              Cancelar y volver al doble factor
+            </button>
+          }
+          <button type="submit" [disabled]="flow.busy">
+            {{ flow.busy ? 'Guardando...' : 'Guardar y continuar' }}
+          </button>
+        </div>
+      </form>
+    }
+
+    @if (flow.step === 'two-factor') {
+      <form (ngSubmit)="verifyTwoFactor()" novalidate>
+        <h2>Paso 3: Verifica tu doble factor</h2>
+        @if (flow.twoFactorBlocked) {
+          <p class="status warning" role="alert">{{ twoFactorNotConfiguredMessage }}</p>
+        } @else {
+          <p>Ingresa el código de {{ codeLength }} dígitos que te enviamos. No guardamos ni mostramos tu código.</p>
+        }
+
+        <label for="code">Código de verificación</label>
+        <input id="code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code"
+          [(ngModel)]="flow.code" (ngModelChange)="flow.error = ''"
+          [attr.maxlength]="codeLength" [disabled]="flow.twoFactorBlocked"
+          [attr.aria-invalid]="flow.error ? 'true' : null"
+          [attr.aria-describedby]="flow.error ? 'code-help code-error' : 'code-help'">
+        <p id="code-help" class="help">Son {{ codeLength }} dígitos, solo números.</p>
+        @if (flow.error) {
+          <p id="code-error" class="error" role="alert">{{ flow.error }}</p>
+        }
+        @if (flow.notice) {
+          <p class="status success" role="status">{{ flow.notice }}</p>
+        }
+
+        <div class="actions">
+          <button type="button" class="secondary" (click)="flow.editDocument()" [disabled]="flow.busy">
+            Volver al documento
+          </button>
+          <button type="button" class="secondary" (click)="resendCode()" [disabled]="flow.busy || flow.twoFactorBlocked">
+            Enviar un nuevo código
+          </button>
+          <button type="submit" [disabled]="flow.busy || flow.twoFactorBlocked">
+            {{ flow.busy ? 'Verificando...' : 'Verificar código' }}
+          </button>
+        </div>
+      </form>
+    }
+
+    @if (flow.step === 'activation') {
+      <div>
+        <h2>Paso 4: Activación de tu wallet</h2>
+
+        @switch (flow.activationOutcome) {
+          @case ('ready') {
+            <p>Revisa tus datos y confirma el registro para activar tu wallet.</p>
+            <dl class="summary">
+              <dt>Tipo de documento</dt>
+              <dd>{{ flow.documentType }}</dd>
+              <dt>Número de documento</dt>
+              <dd>{{ flow.documentSummary }}</dd>
+              <dt>Doble factor</dt>
+              <dd>Verificado</dd>
+            </dl>
+          }
+          @case ('unconfirmed') {
+            <p class="status warning" role="status">Verificación aprobada · wallet sin confirmar</p>
+            <p>Aprobamos tu verificación, pero todavía no pudimos confirmar tu wallet. Actualiza el estado para volver a consultarla.</p>
+          }
+          @case ('in-review') {
+            <p class="status warning" role="status">Verificación en revisión</p>
+            <p>Un operador revisará tu documento. Tu wallet seguirá pendiente hasta que se resuelva; actualiza el estado para consultarla.</p>
+          }
+          @case ('rejected') {
+            <p class="status danger" role="status">Verificación rechazada</p>
+            <p>No pudimos aprobar este documento. No se creó ninguna wallet ni se habilitan pagos. Puedes empezar de nuevo con otro documento de prueba.</p>
+          }
+        }
+
+        @if (flow.error) {
+          <p class="error" role="alert">{{ flow.error }}</p>
+        }
+
+        @if (flow.activationOutcome === 'ready') {
+          <button type="button" (click)="activate()" [disabled]="flow.busy">
+            {{ flow.busy ? 'Confirmando...' : 'Confirmar registro' }}
+          </button>
+        }
+        @if (flow.needsFollowUp) {
+          <button type="button" (click)="refresh()" [disabled]="flow.busy">
+            {{ flow.busy ? 'Consultando...' : 'Actualizar estado' }}
+          </button>
+        }
+        @if (flow.activationOutcome === 'rejected') {
+          <button type="button" (click)="flow.reset()" [disabled]="flow.busy">Empezar de nuevo</button>
+        }
+      </div>
+    }
+
+    @if (flow.step === 'exit') {
+      <div>
+        <h2>Paso 5: Salida</h2>
+
+        @if (flow.wallet) {
+          <p class="status success" role="status">Wallet activa</p>
+          <p>Tu verificación fue aprobada y tu wallet está confirmada.</p>
+          <dl class="summary">
+            <dt>Wallet</dt>
+            <dd>{{ flow.wallet.id }}</dd>
+            <dt>Estado confirmado</dt>
+            <dd>{{ flow.wallet.status }}</dd>
+            <dt>Saldo disponible</dt>
+            <dd>{{ flow.wallet.available }} céntimos {{ flow.wallet.currency }}</dd>
+          </dl>
+        } @else {
+          <p class="status warning" role="status">Wallet sin confirmar</p>
+          <p>Todavía no podemos mostrar tu wallet porque la API no la ha confirmado.</p>
+        }
+
+        @if (flow.error) {
+          <p class="error" role="alert">{{ flow.error }}</p>
+        }
+
+        @if (flow.paymentsEntryOpened) {
+          <p class="status success" role="status">Los pagos de bajo monto se habilitarán desde aquí. Todavía no se inició ningún pago.</p>
+        } @else if (flow.paymentsEntryAvailable) {
+          <p class="notice">Este botón solo abre el punto de entrada a pagos de bajo monto; no inicia ningún pago.</p>
+          <button type="button" (click)="openPayments()" [disabled]="flow.busy">Ir a pagos de bajo monto</button>
+        }
+        <button type="button" class="secondary" (click)="finish()" [disabled]="flow.busy">
+          {{ flow.busy ? 'Terminando...' : 'Terminar' }}
+        </button>
+      </div>
+    }
+
+    <p class="notice">Cada documento puede registrarse una sola vez. No se guarda tu documento en el navegador.</p>
+    <a routerLink="/login">Volver al login heredado</a>
+  </section>
+</main>

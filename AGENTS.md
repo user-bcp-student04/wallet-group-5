@@ -1,6 +1,10 @@
-# Instrucciones de AI Labs
+# Instrucciones de Wallet Group 5
 
-Trabaja desde la raiz de ai-labs, el unico repositorio Git. Aplica las instrucciones de la seccion del componente elegido: auth, api o web. No leas ni modifiques codigo de otros componentes sin ampliar el alcance acordado.
+Trabaja desde la raiz de wallet-group-5. El codigo heredado sigue sujeto a las
+instrucciones de la seccion del componente elegido: auth, api o web. No leas ni
+modifiques codigo de otros componentes sin ampliar el alcance acordado. Para el
+producto Wallet, usa el cambio OpenSpec correspondiente como fuente de alcance;
+su existencia no implica que las decisiones pendientes esten aprobadas.
 
 Ejecuta Git desde la raiz y las pruebas con el directorio del componente. Desde la raiz puedes usar python tools/lab.py test auth, api o web, segun corresponda. Guarda evidencias generales en la raiz, con componente e IDs H-AUTH-NN, H-API-NN o H-WEB-NN; conserva las secciones existentes. Crea cada entregable cuando lo pida su paso.
 
